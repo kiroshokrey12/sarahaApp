@@ -40,7 +40,7 @@ export const confirmEmail = syncHandler(async (req, res, next) => {
     if (!token) {
         return next(new Error("token not found", { cause: 404 }))
     }
-    const decoded = await verifyToken({ token: token, segnture: process.env.SIGNATURE_CONFIRMATION })
+    const decoded = await verifyToken({ token: token, segnture: process.env.TOKEN_SECRET_USER })
 
     if (!decoded?.email) {
         return next(new Error("Invalid token payload", { cause: 500 }))
@@ -63,11 +63,11 @@ export const signin = syncHandler(async (req, res, next) => {
 
     const { email, password } = req.body
     // check email
-    const user = await userModel.findOne({ email })    //confirmed: true 
+    const user = await userModel.findOne({ email, confirmed: true })    //confirmed: true 
     if (!user) {
         return next(new Error("Email not exists or not confirmed yet", { cause: 400 }))
     }
-    if(user?.isDeleted){
+    if (user?.isDeleted) {
         return next(new Error("User is deleted", { cause: 401 }))
     }
     // check password
@@ -89,9 +89,9 @@ export const signin = syncHandler(async (req, res, next) => {
 export const getProfile = syncHandler(async (req, res, next) => {
 
     req.user.phone = await decrypt({ key: req.user.phone, secretKey: process.env.ENCRYPT })
-    const messages = await messageModel.find({userId:req.user._id})
+    const messages = await messageModel.find({ userId: req.user._id })
 
-    return res.status(201).json({ msg: "done", user: req.user , messages})
+    return res.status(201).json({ msg: "done", user: req.user, messages })
 })
 
 //-----------------------------------------------------[share profile]---------------------------------------------------------------------------
@@ -99,7 +99,7 @@ export const getProfile = syncHandler(async (req, res, next) => {
 export const shareProfile = syncHandler(async (req, res, next) => {
 
     const user = await userModel.findById(req.params.id).select("name email phone");
-    user ? res.status(201).json({ msg: "done", user }): res.status(404).json({ msg: "user not found" });
+    user ? res.status(201).json({ msg: "done", user }) : res.status(404).json({ msg: "user not found" });
 })
 //-----------------------------------------------------[update profile]---------------------------------------------------------------------------
 
@@ -116,14 +116,14 @@ export const updateProfile = syncHandler(async (req, res, next) => {
 //-----------------------------------------------------[update Password profile]---------------------------------------------------------------------------
 
 export const updatePasswordProfile = syncHandler(async (req, res, next) => {
-    const {oldPassword, newPassword} =req.body
+    const { oldPassword, newPassword } = req.body
     // check old password
-        if(!await compareHash({password: oldPassword,hashed:req.user.password})){
-            return next(new Error("Invalid  old password"))
-        }
-        const hash = await Hash({password:newPassword,SALT_ROUND:process.env.SALT_ROUND})
+    if (!await compareHash({ password: oldPassword, hashed: req.user.password })) {
+        return next(new Error("Invalid  old password"))
+    }
+    const hash = await Hash({ password: newPassword, SALT_ROUND: process.env.SALT_ROUND })
 
-    const user = await userModel.findByIdAndUpdate(req.user._id,{password:hash,passwordChangedAt:Date.now()}, { new: true })
+    const user = await userModel.findByIdAndUpdate(req.user._id, { password: hash, passwordChangedAt: Date.now() }, { new: true })
     return res.status(201).json({ msg: "password updated successfully" })
 })
 
@@ -132,7 +132,7 @@ export const updatePasswordProfile = syncHandler(async (req, res, next) => {
 
 export const freezeAcc = syncHandler(async (req, res, next) => {
 
-    const user = await userModel.findByIdAndUpdate(req.user._id,{isDeleted:true}, { new: true })
-    return res.status(201).json({ msg: "account deleted ",user })
+    const user = await userModel.findByIdAndUpdate(req.user._id, { isDeleted: true }, { new: true })
+    return res.status(201).json({ msg: "account deleted ", user })
 })
 

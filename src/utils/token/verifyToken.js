@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
 
-export const verifyToken = async({token,segnture=process.env.SIGNATURE_CONFIRMATION})=>{
-    return jwt.verify(token, process.env.SIGNATURE_CONFIRMATION)
+export const verifyToken = async({token,segnture=TOKEN_SECRET_USER})=>{
+    return jwt.verify(token, segnture)
 }
